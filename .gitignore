@@ -102,6 +102,8 @@ ENV/
 
 # custom
 .DS_Store
+*.zip
 config.py
 images/
+videos/
 token
