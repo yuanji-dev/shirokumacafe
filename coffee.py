@@ -35,6 +35,8 @@ def main():
             csv_writer = csv.writer(f) 
             for event in events:
                 time = float((event.start + event.end)) / 2 / 1000 # msec => sec
+                if time == 0.0:
+                    continue
                 text = event.text
                 csv_writer.writerow((time, text))
             print('[SUCCESS] %s done.' % dialogue_name)
