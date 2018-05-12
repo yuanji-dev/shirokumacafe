@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+import csv
 import requests
 import time
 import glob
@@ -14,11 +15,25 @@ USER_AGENT = 'api-client/2.0 com.douban.shuo/2.2.7(123) Android/22 product/PD160
 
 PWD = os.path.dirname(os.path.abspath('__file__'))
 IMAGE_DIR = os.path.join(PWD, 'images')
+DIALOGUE_DIR = os.path.join(PWD, 'dialogues')
 TOKEN_FILE = os.path.join(PWD, 'token')
 
 def pick_image():
+    # return path, text
     episode_dir = random.choice(glob.glob(os.path.join(IMAGE_DIR, '*')))
-    return random.choice(glob.glob(os.path.join(episode_dir, '*')))
+    return random.choice(glob.glob(os.path.join(episode_dir, '*'))), ''
+
+def pick_image_v2():
+    # return path, text
+    dialogue = random.choice(glob.glob(os.path.join(DIALOGUE_DIR, '*')))
+    episode = os.path.split(dialogue)[-1].replace('.csv', '')
+    with open(dialogue) as f:
+        csv_reader = csv.reader(f)
+        ts_text_list = list(csv_reader)
+        # 开头结尾选出一张，然后与正片一起随机挑选
+        ts, text = random.choice([random.choice(ts_text_list[:23] + ts_text_list[-30:])] + ts_text_list[23:-31])
+        image_path = os.path.join(IMAGE_DIR, episode, '{ts}.jpg'.format(ts=ts))
+        return image_path, text
 
 def get_access_token():
     with open(TOKEN_FILE) as f:
@@ -41,7 +56,8 @@ def fresh_access_token():
 
 def create_status():
     access_token = get_access_token()
-    with open(pick_image(), 'rb') as image:
+    image_path, text = pick_image_v2()
+    with open(image_path, 'rb') as image:
         files = {
             'image': image
         }
@@ -53,7 +69,7 @@ def create_status():
 
         data = {
             'version': 2,
-            'text': ''
+            'text': text
         }
 
         r = requests.post(STATUS_URL, headers=headers, files=files, data=data)
