@@ -101,6 +101,7 @@ ENV/
 .mypy_cache/
 
 # custom
+.vscode
 .DS_Store
 *.zip
 config.py
