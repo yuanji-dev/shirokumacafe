@@ -12,9 +12,11 @@ from datetime import datetime, timedelta
 from config import API_KEY, API_SECRET, USERNAME, PASSWORD
 
 API_TOKEN_URL = 'https://frodo.douban.com/service/auth2/token'
-STATUS_URL = 'https://api.douban.com/v2/lifestream/statuses'
-COMMENT_URL = 'https://api.douban.com/v2/lifestream/status/%s/comments'
-USER_AGENT = 'api-client/2.0 com.douban.shuo/2.2.7(123) Android/22 product/PD1602 vendor/vivo model/vivo X7'
+
+FRODO_USER_AGENT = 'api-client/1 com.douban.frodo/5.24.0(132) Android/22 product/PD1602 vendor/vivo model/vivo X7 rexxardev'
+FRODO_UPLOAD_URL = 'https://frodo.douban.com/api/v2/status/upload'
+FRODO_STATUS_URL = 'https://frodo.douban.com/api/v2/status/create_status'
+FRODO_COMMENT_URL = 'https://frodo.douban.com/api/v2/status/%s/create_comment'
 
 PWD = os.path.dirname(os.path.abspath('__file__'))
 IMAGE_DIR = os.path.join(PWD, 'images')
@@ -75,7 +77,6 @@ def find_gif_text(episode, start, end):
     text = '\n'.join(sentences)
     return text if is_matched == False else ''
 
-
 def get_access_token():
     with open(TOKEN_FILE) as f:
         return f.read()
@@ -83,7 +84,7 @@ def get_access_token():
 
 def build_headers():
     return {
-        'User-Agent': USER_AGENT,
+        'User-Agent': FRODO_USER_AGENT,
         'Authorization': 'Bearer %s' % get_access_token(),
     }
 
@@ -107,24 +108,22 @@ def fresh_access_token():
 def create_status(image_path, text):
     with open(image_path, 'rb') as image:
         files = {'image': image}
-
-        data = {'version': 2, 'text': text}
-
         r = requests.post(
-            STATUS_URL, headers=build_headers(), files=files, data=data)
-        print(r.content)
-        if not r.status_code == requests.codes.ok:  #pylint: disable=E1101
+            FRODO_UPLOAD_URL, headers=build_headers(), files=files)
+        if not r.status_code == requests.codes.ok:
             fresh_access_token()
             return False, r.json()
+
+        data = {'text': text, 'image_urls': r.json()['url']}
+        r = requests.post(FRODO_STATUS_URL, headers=build_headers(), data=data)
         return True, r.json()
 
 
 def create_comment(status_id, comment):
-    url = COMMENT_URL % status_id
+    url = FRODO_COMMENT_URL % status_id
     data = {'text': comment}
     r = requests.post(url, headers=build_headers(), data=data)
     print(r.content)
-
 
 def main():
     if (datetime.now() + timedelta(seconds=10)).hour % 4 == 0:
