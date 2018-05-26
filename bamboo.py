@@ -6,8 +6,12 @@ import glob
 import subprocess
 import sys
 
+
 def screenshot(ts, src, dst):
-    cmd = ['ffmpeg', '-ss', ts, '-i', src, '-y', '-f', 'image2', '-vframes', '1', dst]
+    cmd = [
+        'ffmpeg', '-ss', ts, '-i', src, '-y', '-f', 'image2', '-vframes', '1',
+        dst
+    ]
     res = subprocess.run(cmd, stdout=subprocess.PIPE)
     sys.stdout.buffer.write(res.stdout)
 
@@ -25,7 +29,7 @@ def main():
             for ts, _ in csv_reader:
                 dst = os.path.join(dst_dir, '%s.jpg' % ts)
                 screenshot(ts, src, dst)
-    
+
 
 if __name__ == '__main__':
     main()
