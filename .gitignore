@@ -107,4 +107,6 @@ ENV/
 config.py
 images/
 videos/
+gifs/
+dialogues_1/
 token

@@ -19,7 +19,7 @@ def extract_dialogues(subtitle):
         d[event.start].append(event)
 
     merged_events = []
-    for k, v in d.items():
+    for _, v in d.items():
         e = v[0]
         text = '\n'.join(map(lambda i: i.text, v)).replace(r'\N', '')
         e.text = re.sub(r'{.*?}', '', text)

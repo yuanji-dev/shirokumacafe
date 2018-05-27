@@ -7,7 +7,7 @@ import time
 import glob
 import random
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from config import API_KEY, API_SECRET, USERNAME, PASSWORD
 
@@ -18,6 +18,7 @@ USER_AGENT = 'api-client/2.0 com.douban.shuo/2.2.7(123) Android/22 product/PD160
 
 PWD = os.path.dirname(os.path.abspath('__file__'))
 IMAGE_DIR = os.path.join(PWD, 'images')
+GIF_DIR = os.path.join(PWD, 'gifs')
 DIALOGUE_DIR = os.path.join(PWD, 'dialogues')
 TOKEN_FILE = os.path.join(PWD, 'token')
 
@@ -37,6 +38,17 @@ def pick_image():
         pos = str(timedelta(seconds=float(ts))).rstrip('0')
         comment = '{episode} @ {pos}'.format(episode=episode, pos=pos)
         return image_path, text, comment
+
+
+def pick_gif():
+    sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*')))
+    episode = os.path.split(sub_gif_dir)[-1]
+    gif_path = random.choice(glob.glob(os.path.join(sub_gif_dir, '*')))
+    gif_name = os.path.split(gif_path)[-1].replace('gif', '')
+    start, end = gif_name.replace('_', ':').split('-')
+    comment = '{episode}  {start} ~ {end}'.format(
+        episode=episode, start=start, end=end)
+    return gif_path, '', comment
 
 
 def get_access_token():
@@ -90,7 +102,11 @@ def create_comment(status_id, comment):
 
 
 def main():
-    image_path, text, comment = pick_image()
+    if (datetime.now() + timedelta(seconds=10)).hour % 6 == 0:
+        pick_method = pick_gif
+    else:
+        pick_method = pick_image
+    image_path, text, comment = pick_method()
     ok, result = create_status(image_path, text)
     if not ok:
         time.sleep(2)
