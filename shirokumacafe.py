@@ -23,9 +23,16 @@ DIALOGUE_DIR = os.path.join(PWD, 'dialogues')
 TOKEN_FILE = os.path.join(PWD, 'token')
 
 
+def is_tanabata():
+    today = datetime.today()
+    return today.month == today.day == 7
+
 def pick_image():
     # return path, text, comment
-    dialogue = random.choice(glob.glob(os.path.join(DIALOGUE_DIR, '*')))
+    if is_tanabata():
+        dialogue = random.choice(glob.glob(os.path.join(DIALOGUE_DIR, '*七夕*')))
+    else:
+        dialogue = random.choice(glob.glob(os.path.join(DIALOGUE_DIR, '*')))
     episode = os.path.split(dialogue)[-1].replace('.csv', '')
     with open(dialogue) as f:
         csv_reader = csv.reader(f)
@@ -41,7 +48,10 @@ def pick_image():
 
 
 def pick_gif():
-    sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*')))
+    if is_tanabata():
+        sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*七夕*')))
+    else:
+        sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*')))
     episode = os.path.split(sub_gif_dir)[-1]
     gif_path = random.choice(glob.glob(os.path.join(sub_gif_dir, '*')))
     gif_name = os.path.split(gif_path)[-1].replace('gif', '')
