@@ -20,6 +20,7 @@ PWD = os.path.dirname(os.path.abspath('__file__'))
 IMAGE_DIR = os.path.join(PWD, 'images')
 GIF_DIR = os.path.join(PWD, 'gifs')
 DIALOGUE_DIR = os.path.join(PWD, 'dialogues')
+DIALOGUE_DIR_1 = os.path.join(PWD, 'dialogues_1')
 TOKEN_FILE = os.path.join(PWD, 'token')
 
 
@@ -44,11 +45,35 @@ def pick_gif():
     sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*')))
     episode = os.path.split(sub_gif_dir)[-1]
     gif_path = random.choice(glob.glob(os.path.join(sub_gif_dir, '*')))
-    gif_name = os.path.split(gif_path)[-1].replace('gif', '')
+    gif_name = os.path.split(gif_path)[-1].replace('.gif', '')
     start, end = gif_name.replace('_', ':').split('-')
     comment = '{episode}  {start} ~ {end}'.format(
         episode=episode, start=start, end=end)
-    return gif_path, '', comment
+    text = find_gif_text(episode, start, end)
+    return gif_path, text, comment
+
+
+def find_gif_text(episode, start, end):
+    print(start, end)
+    dialogue = os.path.join(DIALOGUE_DIR_1, '{episode}.csv'.format(episode=episode))
+    sentences = []
+    is_matched = None
+    with open(dialogue) as f:
+        csv_reader = csv.reader(f)
+        for row in csv_reader:
+            if row[0] == start:
+                is_matched = True
+
+            if is_matched is not None:
+                if is_matched:
+                    sentences.append('- %s' % row[5])
+                else:
+                    break
+
+            if row[1] == end:
+                is_matched = False
+    text = '\n'.join(sentences)
+    return text if is_matched == False else ''
 
 
 def get_access_token():
