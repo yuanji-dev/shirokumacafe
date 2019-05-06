@@ -1,0 +1,9 @@
+[Unit]
+Description=trigger shirokumcafe douban broadcast
+
+[Timer]
+OnCalendar=*-*-* *:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

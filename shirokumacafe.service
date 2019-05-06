@@ -1,0 +1,9 @@
+[Unit]
+Description=shirokumacafe
+After=network-online.target
+
+[Service]
+User=yuanji
+Type=oneshot
+WorkingDirectory=/home/yuanji/apps/shirokumacafe
+ExecStart=/home/yuanji/.local/bin/pipenv run python shirokumacafe.py
