@@ -2,21 +2,23 @@
 
 import os
 import csv
-import requests
 import time
 import glob
 import random
+import base64
+import hashlib
+import hmac
 
 from datetime import datetime, timedelta
 
+import requests
+
+
 from config import API_KEY, API_SECRET, USERNAME, PASSWORD
 
-API_TOKEN_URL = 'https://frodo.douban.com/service/auth2/token'
 
-FRODO_USER_AGENT = 'api-client/1 com.douban.frodo/5.24.0(132) Android/22 product/PD1602 vendor/vivo model/vivo X7 rexxardev'
-FRODO_UPLOAD_URL = 'https://frodo.douban.com/api/v2/status/upload'
-FRODO_STATUS_URL = 'https://frodo.douban.com/api/v2/status/create_status'
-FRODO_COMMENT_URL = 'https://frodo.douban.com/api/v2/status/%s/create_comment'
+DEFAULT_UA = 'api-client/1 com.douban.frodo/6.9.0(148) Android/23 product/meizu_MX6 vendor/Meizu model/MX6 rom/flyme4 network/wifi platform/mobile'
+DEFAULT_HOST = 'frodo.douban.com'
 
 PWD = os.path.dirname(os.path.abspath('__file__'))
 IMAGE_DIR = os.path.join(PWD, 'images')
@@ -24,6 +26,79 @@ GIF_DIR = os.path.join(PWD, 'gifs')
 DIALOGUE_DIR = os.path.join(PWD, 'dialogues')
 DIALOGUE_DIR_1 = os.path.join(PWD, 'dialogues_1')
 TOKEN_FILE = os.path.join(PWD, 'token')
+
+class DouBanApi:
+
+
+    def __init__(self, api_key, api_secret, ua=DEFAULT_UA, host=DEFAULT_HOST):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.ua = ua
+        self.host = DEFAULT_HOST
+
+    def create_status(self, text, image_path=None):
+        data = {
+            'text': text
+        }
+        if image_path:
+            with open(image_path, 'rb') as image:
+                files = {'image': image}
+                r = self._request('post', '/api/v2/status/upload', files=files, need_login=True)
+
+                data['image_urls'] = r['url']
+        return self._request('post', '/api/v2/status/create_status', data=data, need_login=True)
+
+    def create_comment(self, status_id, text):
+        data = {
+            'text': text
+        }
+        return self._request('post', '/api/v2/status/%s/create_comment' % status_id, data=data, need_login=True)
+
+    def login(self, username, password):
+        data = {
+            'client_id': self.api_key,
+            'client_secret': self.api_secret,
+            'redirect_uri': 'frodo://app/oauth/callback/',
+            'grant_type': 'password',
+            'username': username,
+            'password': password,
+        }
+        r = self._request('post', '/service/auth2/token', data=data)
+        if not r:
+            return
+        access_token = r['access_token']
+        with open(TOKEN_FILE, 'w') as f:
+            f.write(access_token)
+
+    @staticmethod
+    def _get_access_token():
+        with open(TOKEN_FILE) as f:
+            return f.read()
+
+    def _request(self, method, path, params=None, data=None, files=None, need_login=False):
+        headers = {
+            'User-Agent': self.ua,
+        }
+        if need_login:
+            headers['Authorization'] = 'Bearer %s' % self._get_access_token()
+        # 签名
+        if params is None:
+            params = {}
+        params['_ts'] = str(int(time.time()))
+        params['apikey'] = self.api_key
+        sign_src = '&'.join([
+            method.upper(),
+            path.replace('/', '%2F'),
+            params['_ts'],
+        ])
+        params['_sig'] = base64.b64encode(hmac.new(self.api_secret.encode('utf-8'), sign_src.encode(), hashlib.sha1).digest())
+        url = 'https://' + self.host + path
+        api_res = requests.request(method, url, params=params, data=data, files=files, headers=headers)
+        if api_res.status_code == 200:
+            return api_res.json()
+        else:
+            print(api_res.json())
+            return None
 
 
 def pick_image():
@@ -82,48 +157,17 @@ def get_access_token():
         return f.read()
 
 
-def build_headers():
-    return {
-        'User-Agent': FRODO_USER_AGENT,
-        'Authorization': 'Bearer %s' % get_access_token(),
-    }
-
-
-def fresh_access_token():
-    data = {
-        'client_id': API_KEY,
-        'client_secret': API_SECRET,
-        'redirect_uri': '',
-        'grant_type': 'password',
-        'username': USERNAME,
-        'password': PASSWORD,
-    }
-    r = requests.post(API_TOKEN_URL, data=data)
-    r.raise_for_status()
-    access_token = r.json()['access_token']
-    with open(TOKEN_FILE, 'w') as f:
-        f.write(access_token)
-
+douban_api = DouBanApi(API_KEY, API_SECRET)
 
 def create_status(image_path, text):
-    with open(image_path, 'rb') as image:
-        files = {'image': image}
-        r = requests.post(
-            FRODO_UPLOAD_URL, headers=build_headers(), files=files)
-        if not r.status_code == requests.codes.ok:
-            fresh_access_token()
-            return False, r.json()
-
-        data = {'text': text, 'image_urls': r.json()['url']}
-        r = requests.post(FRODO_STATUS_URL, headers=build_headers(), data=data)
-        return True, r.json()
-
+    r = douban_api.create_status(text, image_path)
+    if r:
+        return True, r
+    return False, None
 
 def create_comment(status_id, comment):
-    url = FRODO_COMMENT_URL % status_id
-    data = {'text': comment}
-    r = requests.post(url, headers=build_headers(), data=data)
-    print(r.content)
+    r = douban_api.create_comment(status_id, comment)
+    print(r)
 
 def main():
     if (datetime.now() + timedelta(seconds=10)).hour % 4 == 0:
@@ -134,6 +178,7 @@ def main():
     ok, result = create_status(image_path, text)
     if not ok:
         time.sleep(2)
+        douban_api.login(USERNAME, PASSWORD)
         _, result = create_status(image_path, text)
 
     status_id = result.get('id')
