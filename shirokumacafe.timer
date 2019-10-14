@@ -2,7 +2,7 @@
 Description=trigger shirokumcafe douban broadcast
 
 [Timer]
-OnCalendar=*-*-* *:00:00
+OnCalendar=*-*-* 00/2:00:00
 Persistent=true
 
 [Install]
