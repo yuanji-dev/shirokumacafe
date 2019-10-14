@@ -175,6 +175,8 @@ def main():
     else:
         pick_method = pick_image
     image_path, text, comment = pick_method()
+    if not os.path.exists(TOKEN_FILE):
+        douban_api.login(USERNAME, PASSWORD)
     ok, result = create_status(image_path, text)
     if not ok:
         time.sleep(2)
