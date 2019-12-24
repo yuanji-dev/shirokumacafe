@@ -103,15 +103,13 @@ class DouBanApi:
 
 def pick_image():
     # return path, text, comment
-    dialogue = random.choice(glob.glob(os.path.join(DIALOGUE_DIR, '*')))
+    dialogue = random.choice([p for p in glob.glob(os.path.join(DIALOGUE_DIR, '*')) if 'クリスマス' in p])
     episode = os.path.split(dialogue)[-1].replace('.csv', '')
     with open(dialogue) as f:
         csv_reader = csv.reader(f)
         ts_text_list = list(csv_reader)
         # 开头结尾选出一张，然后与正片一起随机挑选
-        ts, text = random.choice(
-            [random.choice(ts_text_list[:23] + ts_text_list[-30:])] +
-            ts_text_list[23:-31])
+        ts, text = random.choice(ts_text_list[23:-31])
         image_path = os.path.join(IMAGE_DIR, episode, '{ts}.jpg'.format(ts=ts))
         pos = str(timedelta(seconds=float(ts))).rstrip('0')
         comment = '{episode} @ {pos}'.format(episode=episode, pos=pos)
@@ -119,7 +117,7 @@ def pick_image():
 
 
 def pick_gif():
-    sub_gif_dir = random.choice(glob.glob(os.path.join(GIF_DIR, '*')))
+    sub_gif_dir = random.choice([p for p in glob.glob(os.path.join(GIF_DIR, '*')) if 'クリスマス' in p])
     episode = os.path.split(sub_gif_dir)[-1]
     gif_path = random.choice(glob.glob(os.path.join(sub_gif_dir, '*')))
     gif_name = os.path.split(gif_path)[-1].replace('.gif', '')
