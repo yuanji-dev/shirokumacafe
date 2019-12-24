@@ -168,7 +168,7 @@ def create_comment(status_id, comment):
     print(r)
 
 def main():
-    if (datetime.now() + timedelta(seconds=10)).hour % 4 == 0:
+    if (datetime.now() + timedelta(seconds=10)).hour % 2 == 0:
         pick_method = pick_gif
     else:
         pick_method = pick_image
